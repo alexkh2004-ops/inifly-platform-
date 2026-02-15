@@ -31,11 +31,6 @@ All major technical decisions are documented here with reasoning.
 - ⚠️ Con: Next.js has a learning curve
 - ⚠️ Con: App Router is new (some bugs/rough edges)
 
-### Implementation Notes
-- Using App Router (not Pages Router)
-- TypeScript from the start
-- React Server Components where applicable
-
 ---
 
 ## Decision 002: Tech Stack - Styling
@@ -58,12 +53,6 @@ All major technical decisions are documented here with reasoning.
 | **Emotion** | Flexible | Complex setup | Overkill for MVP |
 | **Plain CSS** | Simple | Messy at scale | Hard to maintain |
 
-### Trade-offs
-- ✅ Pro: Very fast development
-- ✅ Pro: Consistent design system
-- ⚠️ Con: HTML looks messy with long class strings
-- ⚠️ Con: Learning curve for Tailwind classes
-
 ---
 
 ## Decision 003: Tech Stack - Backend & Database
@@ -73,7 +62,7 @@ All major technical decisions are documented here with reasoning.
 
 ### Reasoning
 - **PostgreSQL:** Robust, relational database (perfect for ledgers)
-- **Built-in Auth:** OAuth ready (Google, GitHub)
+- **Built-in Auth:** OAuth ready (Google, GitHub) - for later
 - **Real-time subscriptions:** Live updates without polling
 - **Generous free tier:** 50,000 monthly active users
 - **Great DX:** Dashboard, SQL editor, logs
@@ -87,22 +76,11 @@ All major technical decisions are documented here with reasoning.
 | **Neon** | Serverless Postgres | Newer, less mature | Less features than Supabase |
 | **Custom Backend** | Full control | Lots of work | Too slow for MVP |
 
-### Trade-offs
-- ✅ Pro: Fast setup, full-featured
-- ✅ Pro: Free for MVP scale
-- ⚠️ Con: Vendor lock-in (mitigated: PostgreSQL is portable)
-- ⚠️ Con: Less control over infrastructure
-
-### Implementation Notes
-- Using Row Level Security (RLS) for permissions
-- Database migrations in `/supabase/migrations`
-- Supabase client library in `/src/lib/supabase.ts`
-
 ---
 
 ## Decision 004: Authentication Strategy
 **Date:** 2026-02-15  
-**Status:** ✅ Decided  
+**Status:** ✅ Decided (for later)  
 **Decision:** **OAuth only (Google + GitHub), no email/password**
 
 ### Reasoning
@@ -110,24 +88,8 @@ All major technical decisions are documented here with reasoning.
 - **UX:** Users already have these accounts
 - **Speed:** Supabase has built-in OAuth
 - **Trust:** People trust Google/GitHub login
-- **No email verification needed**
 
-### Alternatives Considered
-| Option | Pros | Cons | Why Not? |
-|--------|------|------|----------|
-| **Email/Password** | Traditional | Security risk, verification needed | Too much work |
-| **Magic Links** | Passwordless | Email delivery issues | UX friction |
-| **Phone OTP** | Secure | SMS costs, international issues | Not needed yet |
-
-### Trade-offs
-- ✅ Pro: Fast, secure, familiar UX
-- ⚠️ Con: Users without Google/GitHub can't sign up
-- ⚠️ Con: Requires OAuth app setup
-
-### Implementation Notes
-- Google OAuth: configured in Supabase dashboard
-- GitHub OAuth: configured in Supabase dashboard
-- Callback URL: `[your-domain]/auth/callback`
+**Note:** Not implementing auth in MVP v0.1 - using text names for now!
 
 ---
 
@@ -143,27 +105,6 @@ All major technical decisions are documented here with reasoning.
 - **Flexibility:** Users can switch AI providers later
 - **MVP-friendly:** Focus on core features, not billing
 
-### Alternatives Considered
-| Option | Pros | Cons | Why Not? |
-|--------|------|------|----------|
-| **Hosted AI** | Better UX | High costs, billing complexity | Not viable for MVP |
-| **Free tier (limited)** | Simple UX | Unsustainable | Need revenue model first |
-| **No AI** | Simplest | Defeats the purpose | AI is core to Inifly |
-
-### Trade-offs
-- ✅ Pro: Free for us, scalable
-- ⚠️ Con: UX friction (users need API key)
-- ⚠️ Con: Non-technical users may struggle
-
-### Implementation Notes
-- API key stored encrypted in Supabase (user table)
-- AI calls made from client-side
-- Settings page for key management
-- Onboarding guide for getting OpenAI key
-
-### Future Consideration
-- After MVP: offer hosted AI for $10/month (we provide the key)
-
 ---
 
 ## Decision 006: Deployment Platform
@@ -175,21 +116,7 @@ All major technical decisions are documented here with reasoning.
 - **Made for Next.js:** Zero-config deployment
 - **Free tier:** Generous for hobby projects
 - **CI/CD built-in:** Push to GitHub = auto deploy
-- **Edge functions:** Fast globally
 - **Great DX:** Preview deployments for PRs
-
-### Alternatives Considered
-| Option | Pros | Cons | Why Not? |
-|--------|------|------|----------|
-| **Netlify** | Similar to Vercel | Less Next.js optimized | Vercel is better for Next |
-| **Railway** | Simple, cheap | Less features | Overkill for static + API |
-| **AWS/GCP** | Full control | Complex, expensive | Too much for MVP |
-| **Self-hosted** | Free | DevOps work | Time sink |
-
-### Trade-offs
-- ✅ Pro: Easiest deployment
-- ✅ Pro: Free for MVP scale
-- ⚠️ Con: Costs rise with scale (but that's a good problem)
 
 ---
 
@@ -202,27 +129,190 @@ All major technical decisions are documented here with reasoning.
 ```
 src/
 ├── app/              # Next.js App Router
-│   ├── (auth)/       # Auth-related pages
+│   ├── (auth)/       # Auth-related pages (later)
 │   ├── (dashboard)/  # Main app pages
-│   └── api/          # API routes
+│   └── api/          # API routes (if needed)
 ├── components/       # React components
 │   ├── ui/           # Reusable UI (buttons, inputs)
 │   └── features/     # Feature-specific components
 ├── lib/              # Utilities
 │   ├── supabase.ts   # DB client
-│   ├── ai.ts         # AI logic
+│   ├── ai.ts         # AI logic (later)
 │   └── utils.ts      # Helpers
 └── types/            # TypeScript types
 ```
 
+---
+
+## Decision 008: Database Schema Design (MVP v0.1)
+**Date:** 2026-02-15  
+**Status:** ✅ Decided & Implemented  
+**Decided by:** alexkh2004-ops + Gemini (Google AI)
+
+### Decision
+**Simple 4-table schema with text-based user tracking (no auth yet)**
+
+**Tables:**
+1. `ventures` - Projects/startups
+2. `ideas` - Strategic proposals
+3. `tasks` - Execution work items
+4. `ledger_entries` - Immutable contribution records
+
 ### Reasoning
-- Clear separation of concerns
-- Easy to find files
-- Scales well as project grows
+
+#### Why text names instead of user accounts?
+- ✅ **Speed:** Can start testing immediately without auth system
+- ✅ **Simplicity:** No user registration, password resets, etc.
+- ✅ **Focus:** Build core features first, add auth later
+- ✅ **Testing:** Easy to manually create test data
+- ✅ **Migration path:** Can add users table in v0.2 and backfill
+
+#### Why separate ideas and tasks?
+- ✅ **Philosophy:** Recognizes both "Head" (strategy) and "Hands" (execution)
+- ✅ **Traceability:** See which tasks implement which ideas
+- ✅ **Fairness:** Idea creators get credit when tasks succeed
+- ✅ **Flexibility:** Ideas can exist without tasks (proposals)
+- ✅ **Multipliers:** Apply to entire chain (idea → tasks)
+
+#### Why immutable ledger?
+- ✅ **Trust:** No one can retroactively change points
+- ✅ **Transparency:** Complete audit trail
+- ✅ **Corrections:** Add negative entries instead of editing
+- ✅ **Legal:** Clear record for equity disputes
+- ✅ **Blockchain-inspired:** Without the complexity
+
+### Alternatives Considered
+
+| Alternative | Pros | Cons | Why Not? |
+|-------------|------|------|----------|
+| **Full user auth from day 1** | Proper security | Months of work | Too slow for MVP |
+| **Combined ideas+tasks table** | Simpler schema | Loses strategy/execution distinction | Against core philosophy |
+| **Mutable points (allow updates)** | Easier to correct mistakes | No audit trail, trust issues | Defeats transparency goal |
+| **NoSQL (Firebase)** | Flexible schema | Bad for relational queries | Equity calc needs joins |
+
+### Schema Details
+
+#### ventures
+```sql
+- id (UUID)
+- name (TEXT)
+- description (TEXT)
+- created_at (TIMESTAMP)
+```
+**Notes:** No creator tracking, no status field (all active for now)
+
+#### ideas
+```sql
+- id (UUID)
+- venture_id (FK → ventures)
+- title (TEXT)
+- description (TEXT)
+- size (TEXT: XS/S/M/L/XL)
+- strategist_name (TEXT) ← no user FK!
+- is_approved (BOOLEAN)
+- created_at (TIMESTAMP)
+```
+**Notes:** `strategist_name` is just text, will migrate to user_id later
+
+#### tasks
+```sql
+- id (UUID)
+- idea_id (FK → ideas, nullable)
+- title (TEXT)
+- executor_name (TEXT) ← no user FK!
+- task_size (TEXT: XS/S/M/L/XL)
+- status (TEXT: todo/in_progress/done)
+- created_at (TIMESTAMP)
+```
+**Notes:** Can be orphaned (no idea_id) for ad-hoc work
+
+#### ledger_entries
+```sql
+- id (UUID)
+- venture_id (FK → ventures)
+- contributor_name (TEXT) ← no user FK!
+- source_type (TEXT: idea/task/manual)
+- source_id (UUID) ← references ideas or tasks
+- base_points (INTEGER)
+- multiplier (NUMERIC, default 1.0)
+- final_points (INTEGER) ← base_points * multiplier
+- created_at (TIMESTAMP)
+```
+**Notes:** **Immutable** - no updates/deletes allowed!
+
+### Trade-offs
+
+#### Pros ✅
+- Fast to implement (done in 1 hour!)
+- Easy to test manually
+- No auth complexity
+- Clear data model
+- Can query equity instantly
+
+#### Cons ⚠️
+- No security (anyone can claim any name)
+- Duplicate names possible
+- No user profiles/avatars
+- Can't link to external identity
+- Will need migration later
+
+### Migration Path (v0.2)
+
+**When we add real auth:**
+
+1. Create `users` table with Supabase Auth
+2. Add `user_id` columns to all tables
+3. Run migration script:
+   ```sql
+   -- Example: link text names to user IDs
+   UPDATE ideas SET user_id = (
+     SELECT id FROM users 
+     WHERE full_name = ideas.strategist_name
+   );
+   ```
+4. Make `user_id` required, drop text name columns
+5. Add Row Level Security (RLS) policies
+
+**Estimated effort:** 1-2 days
+
+### Implementation Notes
+
+**Created by:** Gemini AI + alexkh2004-ops  
+**Tool:** Supabase Dashboard (manual table creation)  
+**Date:** February 15, 2026, ~10:00 AM  
+**Location:** https://supabase.com/dashboard/project/gjfjohbsvpehmzeozpxv
+
+**What worked well:**
+- Supabase UI is very intuitive
+- Tables created in minutes
+- Easy to see relationships
+
+**What to improve:**
+- Should have used migrations (SQL files)
+- Need to export schema as SQL for version control
+- Should add indexes for performance
+
+### Future Considerations
+
+**v0.2 (Next month):**
+- Add `users` table
+- Add `milestones` table  
+- Foreign keys to users
+- Row Level Security
+
+**v0.3 (Later):**
+- Add `contributors` table (permissions)
+- Add `comments` table
+- Add `attachments` table
+- Add audit logs
+
+### Documentation
+Full schema documented in: [DATABASE_SCHEMA.md](./docs/DATABASE_SCHEMA.md)
 
 ---
 
 ## Template for Future Decisions
+
 ```markdown
 ## Decision XXX: [Title]
 **Date:** YYYY-MM-DD  
@@ -267,19 +357,7 @@ Decisions can change! If we need to revisit:
 2. Add a new decision referencing the old one
 3. Explain what changed and why
 
-Example:
-```markdown
-## Decision 015: Change from BYOK to Hosted AI
-**Date:** 2026-06-01  
-**Status:** ✅ Decided  
-**Supersedes:** Decision 005
-
-**Why changed:** Users struggled with API key setup.
-70% drop-off during onboarding.
-
-**New decision:** We now provide hosted AI for $10/month...
-```
-
 ---
 
-*Last updated: February 15, 2026*
+**Last updated:** February 15, 2026  
+**Total Decisions:** 8
